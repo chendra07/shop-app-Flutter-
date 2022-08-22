@@ -31,59 +31,79 @@ class ProductDetailScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: appBar,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ImageSlider(
-              imageNetworkList: [
-                {
-                  'imageUrl': loadedProduct.imageUrl,
-                  // 'link': 'https://www.udemy.com/', //just ignore the other properties
-                  // 'action': () =>
-                  //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
-                },
-                {
-                  'imageUrl': loadedProduct.imageUrl,
-                  // 'link': 'https://www.udemy.com/',
-                  // 'action': () =>
-                  //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
-                },
-                {
-                  'imageUrl': loadedProduct.imageUrl,
-                  // 'link': 'https://www.udemy.com/',
-                  // 'action': () =>
-                  //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
-                },
-              ],
-              heightPct: Utils.customHeight(context, appBar, 0.3),
-              isAutoPlay: false,
-              viewPortFraction: 1,
-              mode: Mode.number,
-            ),
-            const SizedBox(
-              height: 10,
-              width: double.infinity,
-            ),
-            Text(
-              '\$ ${loadedProduct.price}',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+      // appBar: appBar,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: CMediaQuery.customHeight(context, appBar, 0.35),
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(loadedProduct.title),
+              background: Hero(
+                tag: loadedProduct.id,
+                child: ImageSlider(
+                  imageNetworkList: [
+                    {
+                      'imageUrl': loadedProduct.imageUrl,
+                      // 'link': 'https://www.udemy.com/', //just ignore the other properties
+                      // 'action': () =>
+                      //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
+                    },
+                    {
+                      'imageUrl': loadedProduct.imageUrl,
+                      // 'link': 'https://www.udemy.com/',
+                      // 'action': () =>
+                      //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
+                    },
+                    {
+                      'imageUrl': loadedProduct.imageUrl,
+                      // 'link': 'https://www.udemy.com/',
+                      // 'action': () =>
+                      //     Navigator.of(context).pushNamed(RoutesConfig.cartScreen),
+                    },
+                  ],
+                  heightPct: CMediaQuery.customHeight(context, appBar, 0.35),
+                  isAutoPlay: false,
+                  viewPortFraction: 1,
+                  mode: Mode.number,
+                ),
               ),
             ),
-            const SizedBox(
-              height: 10,
-              width: double.infinity,
-            ),
-            Text(
-              loadedProduct.description,
-              style: const TextStyle(
-                fontSize: 20,
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Column(
+                children: [
+                  const SizedBox(
+                    height: 10,
+                    width: double.infinity,
+                  ),
+                  Text(
+                    '\$ ${loadedProduct.price}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                    width: double.infinity,
+                  ),
+                  Text(
+                    loadedProduct.description,
+                    style: const TextStyle(
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 1500,
+                    width: double.infinity,
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
+            ]),
+          ),
+        ],
       ),
     );
   }

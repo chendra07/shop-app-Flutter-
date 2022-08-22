@@ -13,6 +13,7 @@ class Debouncer {
   }
 
   void disposeDebounce() {
+    debugPrint("Debouncer disposed");
     _timer?.cancel();
   }
 }

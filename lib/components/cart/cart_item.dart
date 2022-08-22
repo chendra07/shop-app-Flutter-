@@ -8,6 +8,7 @@ class CartItem extends StatelessWidget {
   final int quantity;
   final Function delete;
   final Function modifyQuantity;
+  final Function goToDetailScreen;
   final bool hideOpt;
   const CartItem({
     Key key,
@@ -18,6 +19,7 @@ class CartItem extends StatelessWidget {
     this.quantity,
     this.delete,
     this.modifyQuantity,
+    this.goToDetailScreen,
     this.hideOpt = false,
   }) : super(key: key);
 
@@ -70,30 +72,33 @@ class CartItem extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              Row(
-                children: [
-                  ClipRect(
-                    child: Image.network(
-                      imageUrl,
-                      height: 75,
-                      width: 75,
-                      fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () => goToDetailScreen(productId),
+                child: Row(
+                  children: [
+                    ClipRect(
+                      child: Image.network(
+                        imageUrl,
+                        height: 75,
+                        width: 75,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.headline6,
-                        ),
-                        Text('\$ $price'),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.headline6,
+                          ),
+                          Text('\$ $price'),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               hideOpt == false
                   ? Row(

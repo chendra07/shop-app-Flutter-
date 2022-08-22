@@ -19,4 +19,18 @@ class LoadingAnimation {
             size: size,
           );
   }
+
+  static Widget splashScreenAnimation({
+    Color color = Colors.black,
+    double size = 250,
+  }) {
+    return Scaffold(
+      body: Center(
+        child: SpinKitDualRing(
+          color: color,
+          size: size,
+        ),
+      ),
+    );
+  }
 }

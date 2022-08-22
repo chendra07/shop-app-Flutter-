@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 //routes
 import 'routes/routes_config.dart';
+import 'routes/custom_route.dart';
 
 //cfg
 import 'utils/cfg_environment.dart';
@@ -12,7 +13,10 @@ import 'utils/cfg_environment.dart';
 import './providers/products_provider.dart';
 import './providers/cart_provider.dart';
 import './providers/orders_provider.dart';
-import './providers/loading_provider.dart';
+import './providers/auth_provider.dart';
+
+//component
+import './components/UI/loading_animation.dart';
 
 //screens
 import './screens/product_overview_screen.dart';
@@ -22,6 +26,7 @@ import './screens/zoom_image_screen.dart';
 import './screens/order_screen.dart';
 import './screens/user_product_screen.dart';
 import './screens/edit_product_screen.dart';
+import './screens/auth_screen.dart';
 
 void main() async {
   await dotenv.load(fileName: CfgEnvironment.filename);
@@ -36,41 +41,68 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<Products_provider>(
-          create: (context) => Products_provider(),
+        ChangeNotifierProvider<Auth_provider>(
+          create: (context) => Auth_provider(),
         ),
         ChangeNotifierProvider<Cart_provider>(
           create: (context) => Cart_provider(),
         ),
-        ChangeNotifierProvider<Orders_provider>(
-          create: (context) => Orders_provider(),
+        ChangeNotifierProxyProvider<Auth_provider, Products_provider>(
+          create: (context) => Products_provider('', '', []),
+          update: (context, auth, previousProduct) => Products_provider(
+            auth.token,
+            auth.userId,
+            previousProduct == null ? [] : previousProduct.items,
+          ),
         ),
-        ChangeNotifierProvider<Loading_provider>(
-          create: (context) => Loading_provider(),
+        ChangeNotifierProxyProvider<Auth_provider, Orders_provider>(
+          create: (context) => Orders_provider('', '', []),
+          update: (context, auth, previousOrders) => Orders_provider(
+            auth.token,
+            auth.userId,
+            previousOrders == null ? [] : previousOrders.orders,
+          ),
         ),
       ],
-      child: MaterialApp(
-        title: 'Flutter Demo',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: Colors.purple,
-            secondary: const Color.fromARGB(255, 255, 0, 0),
-            error: Colors.red,
-          ),
-          fontFamily: "Lato",
+      child: Consumer<Auth_provider>(
+        builder: (context, auth, _) => MaterialApp(
+          title: 'Flutter Demo',
+          theme: ThemeData(
+              colorScheme: ColorScheme.fromSwatch().copyWith(
+                primary: Colors.purple,
+                secondary: const Color.fromARGB(255, 255, 0, 0),
+                error: Colors.red,
+              ),
+              fontFamily: "Lato",
+              pageTransitionsTheme: PageTransitionsTheme(builders: {
+                TargetPlatform.android: CustomPageTransitionBuilder(),
+                TargetPlatform.iOS: CustomPageTransitionBuilder(),
+              })),
+          // initialRoute: RoutesConfig.productOverviewScreen,
+          home: auth.isAuth
+              ? const ProductOverviewScreen()
+              : FutureBuilder(
+                  future: auth.tryAutoLogin(),
+                  builder: (context, snapshot) =>
+                      snapshot.connectionState == ConnectionState.waiting
+                          ? LoadingAnimation.splashScreenAnimation(
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : const AuthScreen(),
+                ),
+          routes: {
+            RoutesConfig.productOverviewScreen: (ctx) =>
+                const ProductOverviewScreen(),
+            RoutesConfig.productDetailScreen: (ctx) =>
+                const ProductDetailScreen(),
+            RoutesConfig.cartScreen: (ctx) => const CartScreen(),
+            RoutesConfig.zoomImageScreen: (ctx) => const ZoomImageScreen(),
+            RoutesConfig.orderListScreen: (ctx) => const OrderScreen(),
+            RoutesConfig.userProductScreen: (ctx) => const UserProductScreen(),
+            RoutesConfig.editProductScreen: (ctx) => const EditProductScreen(),
+            RoutesConfig.authScreen: (ctx) => const AuthScreen(),
+          },
         ),
-        initialRoute: RoutesConfig.productOverviewScreen,
-        routes: {
-          RoutesConfig.productOverviewScreen: (ctx) =>
-              const ProductOverviewScreen(),
-          RoutesConfig.productDetailScreen: (ctx) =>
-              const ProductDetailScreen(),
-          RoutesConfig.cartScreen: (ctx) => const CartScreen(),
-          RoutesConfig.zoomImageScreen: (ctx) => const ZoomImageScreen(),
-          RoutesConfig.orderListScreen: (ctx) => const OrderScreen(),
-          RoutesConfig.userProductScreen: (ctx) => const UserProductScreen(),
-          RoutesConfig.editProductScreen: (ctx) => const EditProductScreen(),
-        },
       ),
     );
   }

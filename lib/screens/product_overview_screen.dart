@@ -8,6 +8,7 @@ import '../routes/routes_config.dart';
 
 //provider
 import '../providers/cart_provider.dart';
+import '../providers/products_provider.dart';
 
 //utils
 import '../utils/custom_media_query.dart';
@@ -15,6 +16,7 @@ import '../utils/custom_media_query.dart';
 //component
 import '../components/UI/badge.dart';
 import '../components/UI/app_bar.dart';
+import '../components/UI/loading_animation.dart';
 
 //screen
 import '../components/product_overview/products_grid.dart';
@@ -36,11 +38,30 @@ class ProductOverviewScreen extends StatefulWidget {
 
 class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   bool _showOnlyFavorites = false;
+  bool _isLoading = false;
+  bool _isInit = true;
+
+  @override
+  void didChangeDependencies() {
+    if (_isInit) {
+      setState(() {
+        _isLoading = true;
+      });
+      Provider.of<Products_provider>(context, listen: false)
+          .fetchProduct()
+          .whenComplete(() {
+        setState(() {
+          _isLoading = false;
+          _isInit = false;
+        });
+      });
+    }
+    super.didChangeDependencies();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cart = Provider.of<Cart_provider>(context);
-    // final test = Provider.of<Products_provider>(context);
-
+    final Cart_provider cart = Provider.of<Cart_provider>(context);
     final PreferredSizeWidget appBar = CustomAppBar.adaptiveAppBar(
       "Any Shop",
       [
@@ -85,13 +106,20 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
       appBar: appBar,
       drawer: const AppDrawer(),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: Utils.customHeight(context, appBar, 1),
-              child: ProductsGrid(showOnlyFavorite: _showOnlyFavorites),
-            ),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () =>
+              Provider.of<Products_provider>(context, listen: false)
+                  .fetchProduct(),
+          child: Column(
+            children: [
+              SizedBox(
+                height: CMediaQuery.customHeight(context, appBar, 1),
+                child: _isLoading
+                    ? LoadingAnimation.adaptiveLoadingAnimation()
+                    : ProductsGrid(showOnlyFavorite: _showOnlyFavorites),
+              ),
+            ],
+          ),
         ),
       ),
     );

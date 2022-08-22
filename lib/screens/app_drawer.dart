@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+//provider
+import '../providers/auth_provider.dart';
+
+//screens
+import '../screens/order_screen.dart';
 
 //routes
 import '../routes/routes_config.dart';
+import '../routes/custom_route.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key key}) : super(key: key);
@@ -23,6 +31,11 @@ class AppDrawer extends StatelessWidget {
         'onTap': () {
           Navigator.of(context)
               .pushReplacementNamed(RoutesConfig.orderListScreen);
+          //     .pushReplacement(
+          //   CustomRoute(
+          //     builder: (ctx) => const OrderScreen(),
+          //   ),
+          // );
         },
       },
       {
@@ -31,6 +44,15 @@ class AppDrawer extends StatelessWidget {
         'onTap': () {
           Navigator.of(context)
               .pushReplacementNamed(RoutesConfig.userProductScreen);
+        },
+      },
+      {
+        'title': 'Logout',
+        'icon': Icons.logout,
+        'onTap': () {
+          Provider.of<Auth_provider>(context, listen: false).logout();
+          Navigator.of(context).pop();
+          Navigator.of(context).pushReplacementNamed(RoutesConfig.authScreen);
         },
       },
     ];

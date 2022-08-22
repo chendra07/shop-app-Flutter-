@@ -1,5 +1,10 @@
 import 'package:flutter/foundation.dart';
 
+//utils
+import '../utils/services.dart';
+//model
+import '../models/http_exceptions.dart';
+
 class Product with ChangeNotifier {
   final String id;
   final String title;
@@ -20,5 +25,19 @@ class Product with ChangeNotifier {
   void toggleFavoriteStatus() {
     isFavorite = !isFavorite;
     notifyListeners();
+  }
+
+  void toggleFavoriteStatusPATCH(
+      bool oldIsFavorite, String userId, String token) {
+    Services()
+        .put(
+      path: 'userFavorites/$userId/$id.json',
+      token: token,
+      body: isFavorite,
+    )
+        .catchError((error) {
+      isFavorite = oldIsFavorite;
+      HttpException("Failed to change Favorite | exception: $error");
+    });
   }
 }

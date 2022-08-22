@@ -18,28 +18,32 @@ class _OrderItemState extends State<OrderItem> {
   bool _expanded = false;
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(5),
-      child: Column(
-        children: [
-          ListTile(
-            title: Text('\$ ${widget.order.amount}'),
-            subtitle: Text(
-              DateFormat('dd/MM/yyyy hh:mm').format(widget.order.dateTime),
-            ),
-            trailing: IconButton(
-              icon: Icon(!_expanded ? Icons.expand_more : Icons.expand_less),
-              onPressed: () {
-                setState(() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height:
+          _expanded ? min(widget.order.products.length * 20.0 + 110, 200) : 95,
+      child: Card(
+        margin: const EdgeInsets.all(5),
+        child: Column(
+          children: [
+            ListTile(
+              title: Text('\$ ${widget.order.amount}'),
+              subtitle: Text(
+                DateFormat('dd/MM/yyyy hh:mm').format(widget.order.dateTime),
+              ),
+              trailing: IconButton(
+                icon: Icon(!_expanded ? Icons.expand_more : Icons.expand_less),
+                onPressed: () => setState(() {
                   _expanded = !_expanded;
-                });
-              },
+                }),
+              ),
             ),
-          ),
-          if (_expanded)
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(10),
-              height: min(widget.order.products.length * 20.0 + 20, 180),
+              height: _expanded
+                  ? min(widget.order.products.length * 20.0 + 20, 180)
+                  : 0,
               child: ListView(
                 children: widget.order.products
                     .map(
@@ -62,7 +66,8 @@ class _OrderItemState extends State<OrderItem> {
                     .toList(),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

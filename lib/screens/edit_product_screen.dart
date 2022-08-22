@@ -11,7 +11,6 @@ import '../models/product_form_model.dart';
 
 //provider
 import '../providers/products_provider.dart';
-import '../providers/loading_provider.dart';
 
 //utils
 import '../utils/debouncer.dart';
@@ -31,9 +30,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _debouncer = Debouncer(milliseconds: 1500);
   final _imageUrlController = TextEditingController();
   final _form = GlobalKey<FormState>();
-  // ignore: prefer_final_fields
   ProductForm _editedProduct = ProductForm();
   bool isInit = true;
+  bool _isLoading = false;
 
   @override
   void didChangeDependencies() {
@@ -68,8 +67,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loadings = Provider.of<Loading_provider>(context);
-    void _saveForm({Function showLoading, Function dismissLoading}) {
+    void _saveForm() {
       final bool isValid = _form.currentState.validate();
       if (!isValid) {
         return;
@@ -77,7 +75,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       _form.currentState.save();
 
       if (_editedProduct.id == null) {
-        showLoading != null ? showLoading() : null;
+        setState(() => _isLoading = false);
         Provider.of<Products_provider>(context, listen: false)
             .addProduct(
           title: _editedProduct.title,
@@ -87,7 +85,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           isFavorite: _editedProduct.isFavorite,
         )
             .then((_) {
-          dismissLoading != null ? dismissLoading() : null;
+          setState(() => _isLoading = false);
           Navigator.of(context).pop();
         }).catchError((_) {
           throw showDialog(
@@ -100,7 +98,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 TextButton(
                   child: const Text("Okay"),
                   onPressed: () {
-                    dismissLoading != null ? dismissLoading() : null;
+                    setState(() => _isLoading = false);
                     Navigator.of(context).pop();
                   },
                 ),
@@ -128,7 +126,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       appBar: _appBar,
       body: Padding(
         padding: const EdgeInsets.all(15),
-        child: loadings.screenLoadingState
+        child: _isLoading
             ? Center(
                 child: LoadingAnimation.adaptiveLoadingAnimation(),
               )
@@ -268,10 +266,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                         ],
                       ),
                       ElevatedButton.icon(
-                        onPressed: () => _saveForm(
-                          showLoading: loadings.showLoading,
-                          dismissLoading: loadings.dismissLoading,
-                        ),
+                        onPressed: () => _saveForm(),
                         style: ElevatedButton.styleFrom(
                           primary: Theme.of(context).colorScheme.primary,
                         ),

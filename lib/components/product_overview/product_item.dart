@@ -9,28 +9,38 @@ import '../../models/product_model.dart';
 
 //provider
 import '../../providers/cart_provider.dart';
+import '../../providers/auth_provider.dart';
+
+//utils
+import '../../utils/debouncer.dart';
 
 //component
 // import '../UI/customRunningText.dart';
 
-class ProductItem extends StatelessWidget {
-  // final String id;
-  // final String title;
-  // final String imageUrl;
-
+class ProductItem extends StatefulWidget {
   const ProductItem({
     Key key,
-    // @required this.id,
-    // @required this.title,
-    // @required this.imageUrl,
   }) : super(key: key);
 
   @override
+  State<ProductItem> createState() => _ProductItemState();
+}
+
+class _ProductItemState extends State<ProductItem> {
+  final _debouncer = Debouncer(milliseconds: 1500);
+  @override
+  void dispose() {
+    _debouncer.disposeDebounce();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Product product = Provider.of<Product>(context, listen: false);
+    final Product product = Provider.of<Product>(context);
+    final Auth_provider auth =
+        Provider.of<Auth_provider>(context, listen: false);
     final Cart_provider cart =
         Provider.of<Cart_provider>(context, listen: false);
-
     return Card(
       elevation: 5,
       child: InkWell(
@@ -43,29 +53,40 @@ class ProductItem extends StatelessWidget {
         },
         child: Column(
           children: [
-            FadeInImage.assetNetwork(
-              placeholder: "assets/images/fading_circles.gif",
-              imageErrorBuilder: (context, error, stackTrace) => const SizedBox(
-                height: 100,
-                child: Center(
-                  child: Text("[Cannot fetch image]"),
+            Hero(
+              tag: product.id,
+              child: FadeInImage.assetNetwork(
+                placeholder: "assets/images/fading_circles.gif",
+                imageErrorBuilder: (context, error, stackTrace) =>
+                    const SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Text("[Cannot fetch image]"),
+                  ),
                 ),
+                image: product.imageUrl,
+                fit: BoxFit.cover,
               ),
-              image: product.imageUrl,
-              fit: BoxFit.cover,
             ),
             Text(product.title),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Consumer<Product>(
-                  builder: (cotext, product, child) => IconButton(
-                    icon: Icon(product.isFavorite
-                        ? Icons.favorite
-                        : Icons.favorite_border),
-                    color: Theme.of(context).colorScheme.secondary,
-                    onPressed: () => product.toggleFavoriteStatus(),
-                  ),
+                IconButton(
+                  icon: Icon(product.isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border),
+                  color: Theme.of(context).colorScheme.secondary,
+                  onPressed: () {
+                    _debouncer.run(() {
+                      product.toggleFavoriteStatusPATCH(
+                        product.isFavorite,
+                        auth.userId,
+                        auth.token,
+                      );
+                    });
+                    product.toggleFavoriteStatus();
+                  },
                 ),
                 Text('\$ ${product.price}'),
                 IconButton(
@@ -98,43 +119,5 @@ class ProductItem extends StatelessWidget {
         ),
       ),
     );
-    // GridTile(
-    //   footer:
-
-    // GridTileBar(
-    //   backgroundColor: Colors.black87,
-    // leading: Consumer<Product>(
-    //   builder: (cotext, product, child) => IconButton(
-    //     icon: Icon(
-    //         product.isFavorite ? Icons.favorite : Icons.favorite_border),
-    //     color: Theme.of(context).colorScheme.secondary,
-    //     onPressed: () => product.toggleFavoriteStatus(),
-    //   ),
-    // ),
-    //   title: CustomRunningText(
-    //     text: product.title,
-    //   ),
-    //   trailing: IconButton(
-    //     icon: const Icon(Icons.shopping_cart),
-    //     color: Theme.of(context).colorScheme.secondary,
-    //     onPressed: () {
-    //       cart.addItem(product.id, product.price, product.title, 1);
-    //     },
-    //   ),
-    // ),
-    // child: GestureDetector(
-    //   onTap: () {
-    //     Navigator.of(context).pushNamed(
-    //       RoutesConfig.productDetailScreen,
-    //       arguments: product.id,
-    //     );
-    //   },
-    //   child: Image.network(
-    //     product.imageUrl,
-    //     fit: BoxFit.cover,
-    //   ),
-    // ),
-    // ),
-    // );
   }
 }

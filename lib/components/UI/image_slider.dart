@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:carousel_indicator/carousel_indicator.dart';
+import 'package:delayed_display/delayed_display.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 //routes
@@ -31,16 +32,19 @@ class ImageSlider extends StatefulWidget {
 Widget pageNumBuilder({Mode mode, int length, int activeIndex}) {
   switch (mode) {
     case Mode.number:
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          color: const Color.fromARGB(106, 0, 0, 0),
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-        child: Text(
-          '${activeIndex + 1}/$length',
-          style: const TextStyle(color: Colors.white),
+      return DelayedDisplay(
+        delay: const Duration(seconds: 1),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            color: const Color.fromARGB(106, 0, 0, 0),
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
+          child: Text(
+            '${activeIndex + 1}/$length',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
         ),
       );
       break;
@@ -90,7 +94,7 @@ class _ImageSliderState extends State<ImageSlider> {
             height: widget.heightPct,
             viewportFraction: widget.viewPortFraction,
             enableInfiniteScroll: false,
-            enlargeCenterPage: true,
+            enlargeCenterPage: false,
             autoPlay: widget.isAutoPlay,
             onPageChanged: (index, reason) =>
                 setState(() => activeIndex = index),

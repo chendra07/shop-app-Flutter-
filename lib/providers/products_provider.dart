@@ -1,9 +1,9 @@
 // ignore_for_file: file_names
-import 'dart:convert';
 import 'package:flutter/material.dart';
 
 //model
 import '../models/product_model.dart';
+import '../models/http_exceptions.dart';
 
 //utils
 import '../utils/services.dart';
@@ -11,40 +11,15 @@ import '../utils/services.dart';
 // ignore: camel_case_types
 class Products_provider with ChangeNotifier {
   // ignore: prefer_final_fields
-  List<Product> _items = [
-    Product(
-      id: 'p1',
-      title: 'Red Shirt',
-      description: 'A red shirt - it is pretty red!',
-      price: 29.99,
-      imageUrl:
-          'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
-    ),
-    Product(
-      id: 'p2',
-      title: 'Trousers',
-      description: 'A nice pair of trousers.',
-      price: 59.99,
-      imageUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Trousers%2C_dress_%28AM_1960.022-8%29.jpg/512px-Trousers%2C_dress_%28AM_1960.022-8%29.jpg',
-    ),
-    Product(
-      id: 'p3',
-      title: 'Yellow Scarf',
-      description: 'Warm and cozy - exactly what you need for the winter.',
-      price: 19.99,
-      imageUrl:
-          'https://live.staticflickr.com/4043/4438260868_cc79b3369d_z.jpg',
-    ),
-    Product(
-      id: 'p4',
-      title: 'A Pan',
-      description: 'Prepare any meal you want.',
-      price: 49.99,
-      imageUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Cast-Iron-Pan.jpg/1024px-Cast-Iron-Pan.jpg',
-    ),
-  ];
+  List<Product> _items;
+  final String _token;
+  final String _userId;
+
+  Products_provider(
+    this._token,
+    this._userId,
+    this._items,
+  );
 
   List<Product> get items {
     return [..._items];
@@ -58,30 +33,29 @@ class Products_provider with ChangeNotifier {
     return _items.firstWhere((product) => product.id == productId);
   }
 
-  Future<dynamic> addProduct({
+  Future<void> addProduct({
     @required String title,
     @required String description,
     @required double price,
     @required String imageUrl,
     @required bool isFavorite,
   }) {
-    return Services()
-        .post(
+    return Services().post(
       path: 'products.json',
-      body: json.encode({
+      token: _token,
+      body: {
         'title': title,
         'description': description,
         'price': price,
         'imageUrl': imageUrl,
-        'isFavorite': isFavorite,
-      }),
-    )
-        .then(
+        'creatorId': _userId,
+      },
+    ).then(
       (resp) {
         _items.insert(
           0,
           Product(
-            id: resp['name'],
+            id: resp['body']['name'],
             title: title,
             description: description,
             price: price,
@@ -92,11 +66,49 @@ class Products_provider with ChangeNotifier {
         notifyListeners();
       },
     ).catchError((error) {
-      return Future.error(error);
+      throw error;
     });
   }
 
-  void editProduct({
+  Future<void> fetchProduct({bool filterByUserId = false}) async {
+    String filterString =
+        filterByUserId ? 'orderBy="creatorId"&equalTo="$_userId"' : '';
+    try {
+      final Map<String, dynamic> productResponse = await Services()
+          .get(path: 'products.json?auth=$_token&$filterString')
+          .then((resp) => resp as Map<String, dynamic>);
+
+      final Map<String, dynamic> userFavData = await Services()
+          .get(
+            path: 'userFavorites/$_userId.json?auth=$_token',
+          )
+          .then((resp) => resp as Map<String, dynamic>);
+      final Map<String, dynamic> extractedData = productResponse['body'];
+      final List<Product> tempData = [];
+      extractedData.forEach((prodId, prodData) {
+        tempData.add(
+          Product(
+            id: prodId,
+            title: prodData['title'],
+            description: prodData['description'],
+            price: prodData['price'],
+            imageUrl: prodData['imageUrl'],
+            isFavorite: userFavData['body'] == null
+                ? false
+                : userFavData['body'][prodId] ?? false,
+          ),
+        );
+      });
+      _items = tempData;
+      notifyListeners();
+    } catch (error) {
+      _items = [];
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> editProduct({
     @required String id,
     @required String title,
     @required String description,
@@ -104,20 +116,53 @@ class Products_provider with ChangeNotifier {
     @required String imageUrl,
     @required bool isFavorite,
   }) {
-    final prodIndex = _items.indexWhere((prod) => prod.id == id);
-    _items[prodIndex] = Product(
-      id: id,
-      title: title,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      isFavorite: isFavorite,
+    return Services().patch(
+      path: 'products/$id.json?auth=$_token',
+      token: _token,
+      body: {
+        'title': title,
+        'description': description,
+        'price': price,
+        'imageUrl': imageUrl,
+      },
+    ).then((resp) {
+      final prodIndex = _items.indexWhere((prod) => prod.id == id);
+      _items[prodIndex] = Product(
+        id: id,
+        title: title,
+        description: description,
+        price: price,
+        imageUrl: imageUrl,
+        isFavorite: isFavorite,
+      );
+      notifyListeners();
+    }).catchError(
+      (error) {
+        throw error;
+      },
     );
-    notifyListeners();
   }
 
-  void removeItem({@required String id}) {
-    _items.removeWhere((prod) => prod.id == id);
+  Future<void> removeItem({@required String id}) async {
+    int existingIndex = _items.indexWhere((prod) => prod.id == id);
+    Product existingProduct = _items[existingIndex];
+    _items.removeAt(existingIndex);
     notifyListeners();
+
+    return Services()
+        .delete(
+      path: 'products/$id.json?auth=$_token',
+      token: _token,
+    )
+        .then((resp) {
+      final int statusCode = resp['statusCode'] as int;
+      if (statusCode >= 400) {
+        throw HttpException("Could not delete product.");
+      }
+    }).catchError((error) {
+      _items.insert(existingIndex, existingProduct);
+      notifyListeners();
+      throw error;
+    });
   }
 }
